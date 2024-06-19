@@ -1,10 +1,12 @@
-from PyQt5.QtWidgets import QApplication, QDialog, QGraphicsScene, QGraphicsPixmapItem, QListWidget, QListWidgetItem
+from PyQt5.QtWidgets import QApplication, QDialog, QGraphicsScene, QGraphicsPixmapItem
 from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from camera_ui import Ui_Dialog
-from attendance_taker import Face_Recognizer
 import sys
 import cv2
+sys.path.append('/test1')
+from attendance_taker import Face_Recognizer
+
 
 def gstreamer_pipeline(
     sensor_id=0,

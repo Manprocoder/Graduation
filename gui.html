@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera System</title>
+    <style>
+        body {
+            /* Use a linear gradient for the background */
+            background: linear-gradient(to right, #1fa2ff, #12d8fa, #a6ffcb);
+            /*background: linear-gradient(to right, #e0f2f1, #006064);
+            /* Use a more stylish font */
+            font-family: 'Roboto', sans-serif;
+            /* Use white color for better contrast against the gradient background */
+            color: #fff;
+            /* Add a subtle text shadow for better readability */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            /* Remove default margin */
+            margin: 0;
+            /* Remove default padding */
+            padding: 0;
+            /* Add a smooth transition effect when the user hovers over elements */
+            transition: all 0.3s ease;
+        }
+        #cameraView {
+            width: 1280px;
+            height: 720px;
+            float: left;
+            margin-left: 15px; /* Shift the camera view 20px from the left border */
+            border: 2px solid blue;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for depth */
+            background-color: #fff;
+            color: red;
+        }        
+        .button {
+            display: block; /* Change to block to stack vertically */
+            width: 200px; /* Example width for consistent button size */
+            padding: 15px 20px; /* Adjust padding as needed */
+            margin: 10px auto; /* Auto margin for centering horizontally */
+            font-size: 16px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            border: none;
+            outline: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            text-align: center; /* Center text horizontally */
+        }
+        
+        
+        .button:hover {
+            background-color: rgba(0, 0, 0, 0.1); /* Light gray on hover */
+        }
+        
+        #startButton {
+            background-color: rgb(17, 205, 252);
+            color: white; /* Ensure text is readable */
+        }
+        
+        #stopButton {
+            background-color: red;
+            color: white; /* Ensure text is readable */
+        }
+        
+        #viewSavedButton {
+            background-color: yellow;
+            color: black; /* Ensure text is readable */
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-top: 20px; /* Add some spacing above the title */
+        }  
+    </style>
+</head>
+<body>
+    <h1>CAMERA SYSTEM</h1>
+    <img id="cameraView" src="" alt="Camera View" />
+    <div>
+        <button id="startButton" class="button">Start</button>
+        <button id="stopButton" class="button">Stop</button>
+        <button id="viewSavedButton" class="button">View Saved Video</button>
+    </div>
+    <script>
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const viewSavedButton = document.getElementById('viewSavedButton');
+        const cameraView = document.getElementById('cameraView');
+
+        const baseUrl = window.location.origin;
+
+        startButton.addEventListener('click', async () => {
+            console.log("START BUTTON CLICKED")
+            try {
+                const response = await fetch(`${baseUrl}/start`, { method: 'POST' });
+                if (response.ok && response.headers.get('Content-Type').includes('application/json')) {
+                    const result = await response.json();
+                    console.log(result.status);
+                    console.log(response.headers.get('Content-Type'));
+                    cameraView.src = `${baseUrl}/video_feed`;
+                }
+            } catch (error) {
+                console.error('Display video stream failed', error);
+            }
+        });
+
+        stopButton.addEventListener('click', async () => {
+            console.log("STOP BUTTON CLICKED")
+            const response = await fetch(`${baseUrl}/stop`, { method: 'POST' });
+            const result = await response.json();
+            console.log(result.status);
+            cameraView.src = '';
+        });
+
+        viewSavedButton.addEventListener('click', async () => {
+            const response = await fetch(`${baseUrl}/view_saved`, { method: 'POST' });
+            const result = await response.json();
+            console.log(result.status);
+        });
+    </script>
+</body>
+</html>
