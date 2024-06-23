@@ -7,26 +7,8 @@ import time
 import logging
 import sqlite3
 import datetime
-import random
-import string
 
-def gstreamer_pipeline(
-    sensor_id=0,
-    capture_width=320,
-    capture_height=240,
-    display_width=640,
-    display_height=480,
-    framerate=60,
-    flip_method=0,
-):
-    return (
-        f"nvarguscamerasrc sensor-id={sensor_id} ! "
-        f"video/x-raw(memory:NVMM), width=(int){capture_width}, height=(int){capture_height}, framerate=(fraction){framerate}/1 ! "
-        f"nvvidconv flip-method={flip_method} ! "
-        f"video/x-raw, width=(int){display_width}, height=(int){display_height}, format=(string)BGRx ! "
-        f"videoconvert ! "
-        f"video/x-raw, format=(string)BGR ! appsink"
-    )
+
 # Dlib  / Use frontal face detector of Dlib
 detector = dlib.get_frontal_face_detector()
 
@@ -46,10 +28,10 @@ table_name = "attendance"
 create_table_sql = f"CREATE TABLE IF NOT EXISTS {table_name} (name TEXT, time TEXT, date DATE, UNIQUE(name, date))"
 cursor.execute(create_table_sql)
 
+
 # Commit changes and close the connection
 conn.commit()
 conn.close()
-
 
 # Save video
 '''output_dir = 'videos/'
@@ -59,10 +41,11 @@ fourcc = cv2.VideoWriter_fourcc(*'hvc1') #mp4v, hvc1
 output_path = os.path.join(output_dir, 'output2.mp4')
 out = cv2.VideoWriter(output_path, fourcc, 20, (640, 480))
 '''
+
 class Face_Recognizer:
     def __init__(self):
         self.font = cv2.FONT_ITALIC
-        
+
         # FPS
         self.frame_time = 0
         self.frame_start_time = 0
@@ -171,7 +154,6 @@ class Face_Recognizer:
                     cv2.LINE_AA)
         cv2.putText(img_rd, "Faces:  " + str(self.current_frame_face_cnt), (20, 160), self.font, 0.8, (0, 255, 0), 1,
                     cv2.LINE_AA)
-        #cv2.putText(img_rd, "Q: Quit", (20, 450), self.font, 0.8, (255, 255, 255), 1, cv2.LINE_AA)
 
         for i in range(len(self.current_frame_face_name_list)):
             img_rd = cv2.putText(img_rd, "Face_" + str(i + 1), tuple(
@@ -183,10 +165,6 @@ class Face_Recognizer:
     # insert data in database
 
     def attendance(self, name):
-        # Check if the name is unknown
-        if name == "unknown":
-            name = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
-        
         current_date = datetime.datetime.now().strftime('%Y-%m-%d')
         conn = sqlite3.connect("attendance.db")
         cursor = conn.cursor()
@@ -203,33 +181,29 @@ class Face_Recognizer:
             print(f"{name} marked as present for {current_date} at {current_time}")
 
         conn.close()
-    '''
+
     #  Face detection and recognition wit OT from input video stream
-    def process(self, stream):
-    # 1.  Get faces known from "features.all.csv"
+    def process(self, img_rd):
+        # 1.  Get faces known from "features.all.csv"
         if self.get_face_database():
-            while stream.isOpened():
-                self.frame_cnt += 1
-                logging.debug("Frame " + str(self.frame_cnt) + " starts")
-                flag, img_rd = stream.read()
-                kk = cv2.waitKey(1)
-                #out.write(img_rd)
-            
-                # 2.  Detect faces for frame X
-                faces = detector(img_rd, 0)
+            self.frame_cnt += 1
+            logging.debug("Frame " + str(self.frame_cnt) + " starts")
 
-                # 3.  Update cnt for faces in frames
-                self.last_frame_face_cnt = self.current_frame_face_cnt
-                self.current_frame_face_cnt = len(faces)
+            # 2.  Detect faces for frame X
+            faces = detector(img_rd, 0)
 
-                # 4.  Update the face name list in last frame
-                self.last_frame_face_name_list = self.current_frame_face_name_list[:]
+            # 3.  Update cnt for faces in frames
+            self.last_frame_face_cnt = self.current_frame_face_cnt
+            self.current_frame_face_cnt = len(faces)
 
-                # 5.  update frame centroid list
-                self.last_frame_face_centroid_list = self.current_frame_face_centroid_list
-                self.current_frame_face_centroid_list = []
+            # 4.  Update the face name list in last frame
+            self.last_frame_face_name_list = self.current_frame_face_name_list[:]
 
-                # 6.1  if cnt not changes
+            # 5.  update frame centroid list
+            self.last_frame_face_centroid_list = self.current_frame_face_centroid_list
+            self.current_frame_face_centroid_list = []
+
+            # 6.1  if cnt not changes
             if (self.current_frame_face_cnt == self.last_frame_face_cnt) and (
                     self.reclassify_interval_cnt != self.reclassify_interval):
                 logging.debug("scene 1:   No face cnt changes in this frame!!!")
@@ -330,122 +304,10 @@ class Face_Recognizer:
                             self.attendance(nam)
                         else:
                             logging.debug("  Face recognition result: Unknown person")
-                            self.attendance("unknown")
 
                     # 7.  / Add note on cv2 window
                     self.draw_note(img_rd)
-                
-        self.update_fps()
-        
-        cv2.namedWindow("camera", 1)
-        cv2.imshow("camera", img_rd)
-        
-        logging.debug("Frame ends\n\n")
-        '''
+
+            logging.debug("Frame ends\n\n")
+            return img_rd
     
-    def process_frame(self, img_rd):
-        # Assuming the get_face_database method loads necessary data
-        if self.get_face_database():
-            self.frame_cnt += 1
-            logging.debug("Frame " + str(self.frame_cnt) + " starts")
-            faces = detector(img_rd, 0)
-
-            self.last_frame_face_cnt = self.current_frame_face_cnt
-            self.current_frame_face_cnt = len(faces)
-
-            self.last_frame_face_name_list = self.current_frame_face_name_list[:]
-            self.last_frame_face_centroid_list = self.current_frame_face_centroid_list
-            self.current_frame_face_centroid_list = []
-
-            if (self.current_frame_face_cnt == self.last_frame_face_cnt) and (
-                self.reclassify_interval_cnt != self.reclassify_interval):
-                self.current_frame_face_position_list = []
-                if "unknown" in self.current_frame_face_name_list:
-                    self.reclassify_interval_cnt += 1
-
-                if self.current_frame_face_cnt != 0:
-                    for k, d in enumerate(faces):
-                        self.current_frame_face_position_list.append(tuple(
-                            [faces[k].left(), int(faces[k].bottom() + (faces[k].bottom() - faces[k].top()) / 4)]))
-                        self.current_frame_face_centroid_list.append(
-                            [int(faces[k].left() + faces[k].right()) / 2,
-                                int(faces[k].top() + faces[k].bottom()) / 2])
-
-                        img_rd = cv2.rectangle(img_rd,
-                                                tuple([d.left(), d.top()]),
-                                                tuple([d.right(), d.bottom()]),
-                                                (255, 255, 255), 2)
-
-                if self.current_frame_face_cnt != 1:
-                    self.centroid_tracker()
-
-                for i in range(self.current_frame_face_cnt):
-                    img_rd = cv2.putText(img_rd, self.current_frame_face_name_list[i],
-                                         self.current_frame_face_position_list[i], self.font, 0.8, (0, 255, 255), 1,
-                                         cv2.LINE_AA)
-                self.draw_note(img_rd)
-            else:
-                self.current_frame_face_position_list = []
-                self.current_frame_face_X_e_distance_list = []
-                self.current_frame_face_feature_list = []
-                self.reclassify_interval_cnt = 0
-
-                if self.current_frame_face_cnt == 0:
-                    self.current_frame_face_name_list = []
-                else:
-                    self.current_frame_face_name_list = []
-                    for i in range(len(faces)):
-                        shape = predictor(img_rd, faces[i])
-                        self.current_frame_face_feature_list.append(
-                            face_reco_model.compute_face_descriptor(img_rd, shape))
-                        self.current_frame_face_name_list.append("unknown")
-
-                    for k in range(len(faces)):
-                        self.current_frame_face_centroid_list.append(
-                            [int(faces[k].left() + faces[k].right()) / 2,
-                                int(faces[k].top() + faces[k].bottom()) / 2])
-
-                        self.current_frame_face_X_e_distance_list = []
-
-                        self.current_frame_face_position_list.append(tuple(
-                            [faces[k].left(), int(faces[k].bottom() + (faces[k].bottom() - faces[k].top()) / 4)]))
-
-                        for i in range(len(self.face_features_known_list)):
-                            if str(self.face_features_known_list[i][0]) != '0.0':
-                                e_distance_tmp = self.return_euclidean_distance(
-                                    self.current_frame_face_feature_list[k],
-                                    self.face_features_known_list[i])
-                                self.current_frame_face_X_e_distance_list.append(e_distance_tmp)
-                            else:
-                                self.current_frame_face_X_e_distance_list.append(999999999)
-
-                        similar_person_num = self.current_frame_face_X_e_distance_list.index(
-                            min(self.current_frame_face_X_e_distance_list))
-
-                        if min(self.current_frame_face_X_e_distance_list) < 0.4:
-                            self.current_frame_face_name_list[k] = self.face_name_known_list[similar_person_num]
-                            self.attendance(self.face_name_known_list[similar_person_num])
-                        else:
-                            self.attendance("unknown")
-
-                    self.draw_note(img_rd)
-        return img_rd
-    
-    
-    
-    def run(self):
-        cap = cv2.VideoCapture(gstreamer_pipeline(), cv2.CAP_GSTREAMER)  # Get video stream from camera
-        self.process(cap)
-        #out.release()
-        cap.release()
-        cv2.destroyAllWindows()
-
-def main():
-    # logging.basicConfig(level=logging.DEBUG) # Set log level to 'logging.DEBUG' to print debug info of every frame
-    logging.basicConfig(level=logging.INFO)
-    Face_Recognizer_con = Face_Recognizer()
-    Face_Recognizer_con.run()
-
-
-if __name__ == '__main__':
-    main()

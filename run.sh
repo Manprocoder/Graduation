@@ -35,6 +35,6 @@ fi
 # Start the Gunicorn server
 echo "Starting Gunicorn server..."
 gunicorn -w 4 -k gthread -t 120 --threads 4 --bind 0.0.0.0:5000 gui:app
-
+#gunicorn -w 4 -k gthread -t 120 --threads 4 --bind 0.0.0.0:5000 app:app
 # Print completion message
 echo "Gunicorn server started successfully."

@@ -6,7 +6,6 @@
         body {
             /* Use a linear gradient for the background */
             background: linear-gradient(to right, #1fa2ff, #12d8fa, #a6ffcb);
-            /*background: linear-gradient(to right, #e0f2f1, #006064);
             /* Use a more stylish font */
             font-family: 'Roboto', sans-serif;
             /* Use white color for better contrast against the gradient background */
@@ -20,21 +19,117 @@
             /* Add a smooth transition effect when the user hovers over elements */
             transition: all 0.3s ease;
         }
-        #cameraView {
-            width: 1280px;
-            height: 720px;
-            float: left;
-            margin-left: 15px; /* Shift the camera view 20px from the left border */
-            border: 2px solid blue;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for depth */
+        #content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .cameraViewContainer {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+        }
+        .cameraView {
+            width: 1280px; 
+            height: 720px; 
+            border: 4px solid blue;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             background-color: #fff;
             color: red;
-        }        
+            margin-right: 10px;
+        }
+        .additionalCameraViewContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 5px;
+            display: none;
+        }
+        .cameraViewWrapper {
+            position: relative;
+            width: 100%; 
+            height: 100%; 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .additionalCameraView {
+            width: 480px; 
+            height: 360px; 
+            border: 2px solid green; 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            color: green;
+            margin-right: 10px;
+            margin-top: 5px; 
+            overflow: hidden;
+        }
+        .additionalCameraView video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /*ensure that video cover additional cameraview entirely*/
+        }
+        .title {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2; /* Ensure title appears above video and pause button */
+            background-color: rgba(8, 8, 8, 0.8);
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: none; /* Initially hidden */
+            color: rgb(243, 243, 247);
+        }
+        #pauseButton {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 3;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+        
+        #pauseButton:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        #savedVideos {
+            display: none;
+            width: 300px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            color: #333;
+            margin-top: 20px;
+        }
+        #savedVideos ul {
+            list-style: none;
+            padding: 0;
+        }
+        #savedVideos ul li {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        #savedVideos ul li a {
+            color: #1fa2ff;
+            text-decoration: none;
+        }
+
+        #buttonContainer {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
         .button {
-            display: block; /* Change to block to stack vertically */
-            width: 200px; /* Example width for consistent button size */
-            padding: 15px 20px; /* Adjust padding as needed */
-            margin: 10px auto; /* Auto margin for centering horizontally */
+            display: block;
+            width: 200px;
+            padding: 15px 20px;
+            margin: 10px;
             font-size: 16px;
             cursor: pointer;
             text-transform: uppercase;
@@ -43,59 +138,85 @@
             outline: none;
             border-radius: 5px;
             transition: background-color 0.3s ease;
-            text-align: center; /* Center text horizontally */
+            text-align: center;
         }
-        
-        
         .button:hover {
-            background-color: rgba(0, 0, 0, 0.1); /* Light gray on hover */
+            background-color: rgba(0, 0, 0, 0.1);
         }
-        
         #startButton {
             background-color: rgb(17, 205, 252);
-            color: white; /* Ensure text is readable */
+            color: black;
+            border: 4px solid rgb(238, 238, 247);
         }
-        
         #stopButton {
             background-color: red;
-            color: white; /* Ensure text is readable */
+            color: black;
+            border: 4px solid rgb(238, 238, 247);
         }
-        
         #viewSavedButton {
             background-color: yellow;
-            color: black; /* Ensure text is readable */
+            color: black;
+            border: 4px solid rgb(238, 238, 247);
         }
         h1 {
             color: #333;
             text-align: center;
-            margin-top: 20px; /* Add some spacing above the title */
-        }  
+            margin-top: 0;
+        }
+        
     </style>
 </head>
 <body>
     <h1>CAMERA SYSTEM</h1>
-    <img id="cameraView" src="" alt="Camera View" />
-    <div>
-        <button id="startButton" class="button">Start</button>
-        <button id="stopButton" class="button">Stop</button>
-        <button id="viewSavedButton" class="button">View Saved Video</button>
+    <div id="content">
+        <div class="cameraViewContainer">
+            <div class="cameraView">
+                <img id="cameraView" src="" alt="Camera View" />
+            </div>
+            <div class="additionalCameraViewContainer">
+                <div class="cameraViewWrapper">
+                    <div class="additionalCameraView">
+                        <img id="additionalCameraView" src="" alt=""/>
+                    </div>
+                    <div id="additionalCameraViewTitle" class="title">Recorded Video: <span id="videoFileName"></span></div>
+                    <button id="pauseResumeButton" onclick="togglePause()">Pause</button>
+                </div>
+                <div id="savedVideos">
+                    <h2>Saved Videos</h2>
+                    <ul id="videoList"></ul>
+                </div>
+            </div>
+        </div>
+        <div id="buttonContainer">
+            <button id="startButton" class="button">Start</button>
+            <button id="stopButton" class="button">Stop</button>
+            <button id="viewSavedButton" class="button">View Saved Video</button>
+        </div>
     </div>
     <script>
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
         const viewSavedButton = document.getElementById('viewSavedButton');
         const cameraView = document.getElementById('cameraView');
+        const additionalCameraViewContainer = document.querySelector('.additionalCameraViewContainer');
+        const additionalCameraView = document.getElementById('additionalCameraView');
+        const additionalCameraViewTitle = document.getElementById('additionalCameraViewTitle');
+        const savedVideosDiv = document.getElementById('savedVideos');
+        const videoList = document.getElementById('videoList');
+        const pauseButton = document.getElementById('pauseButton');
+
+        
+        let currentVideoUrl = '';
 
         const baseUrl = window.location.origin;
 
         startButton.addEventListener('click', async () => {
-            console.log("START BUTTON CLICKED")
+            console.log("START BUTTON CLICKED");
             try {
                 const response = await fetch(`${baseUrl}/start`, { method: 'POST' });
                 if (response.ok && response.headers.get('Content-Type').includes('application/json')) {
                     const result = await response.json();
                     console.log(result.status);
-                    console.log(response.headers.get('Content-Type'));
                     cameraView.src = `${baseUrl}/video_feed`;
                 }
             } catch (error) {
@@ -104,18 +225,110 @@
         });
 
         stopButton.addEventListener('click', async () => {
-            console.log("STOP BUTTON CLICKED")
+            console.log("STOP BUTTON CLICKED");
             const response = await fetch(`${baseUrl}/stop`, { method: 'POST' });
             const result = await response.json();
             console.log(result.status);
-            cameraView.src = '';
+            cameraView.src = "";
         });
 
+        let isListViewVisible = false;
+
         viewSavedButton.addEventListener('click', async () => {
-            const response = await fetch(`${baseUrl}/view_saved`, { method: 'POST' });
-            const result = await response.json();
-            console.log(result.status);
+            console.log('VIEW BUTTON CLICKED');
+            if (!isListViewVisible) {
+                try {
+                    const response = await fetch(`${baseUrl}/view_saved`);
+                    if (response.ok && response.headers.get('Content-Type').includes('application/json')) {
+                        const result = await response.json();
+                        console.log(result.status);
+                        updateListView(result.saved_videos);
+                        savedVideos.style.display = 'block'; // Show the list
+                        additionalCameraViewContainer.style.display ='flex'
+                        additionalCameraView.alt = "ADDITIONAL CAMERA"
+                        isListViewVisible = true;
+                    }
+                } catch (error) {
+                    console.error('Failed to load saved videos', error);
+                }
+            } else {
+                videoList.innerHTML = ''; // Clear current list
+                // Clear additional Camera
+                additionalCameraView.src = "";
+                additionalCameraView.alt = "";
+                additionalCameraViewTitle.style.display = 'none';
+                //
+                savedVideos.style.display = 'none'; // Hide the list
+                additionalCameraViewContainer.style.display = 'none'
+                isListViewVisible = false;
+            }
         });
+        
+        function updateListView(videos) {
+            if (!videoList) {
+                console.error('ListView is null');
+                return;
+            }
+            videoList.innerHTML = ''; // Clear the list before adding new items
+            
+            videos.forEach(video => {
+                console.log(`Adding video to list: ${video}`); 
+                const li = document.createElement('li');
+                const videoFileName = video; // Assuming video is just the filename
+                
+                // Create a clickable element (could be an <img> or <span> depending on your UI)
+                const clickableElement = document.createElement('span');
+                clickableElement.textContent = videoFileName;
+                clickableElement.style.cursor = 'pointer'; // Change cursor to indicate clickability
+                
+                // Event listener to display video content on click
+                clickableElement.addEventListener('click', () => displayVideoContent(videoFileName));
+                
+                li.appendChild(clickableElement);
+                videoList.appendChild(li);
+            });
+        }
+        
+        async function displayVideoContent(videoFileName) {
+            try {
+                console.log(`Fetching video content: ${videoFileName}`);
+        
+                if (!additionalCameraView) {
+                    throw new Error('additionalCameraView is null');
+                }
+                
+                // Clear the current content
+                additionalCameraView.src = "";
+                additionalCameraView.alt = "";
+                
+                // Update the title
+                additionalCameraViewTitle.style.display = 'flex'
+                additionalCameraViewTitle.textContent = `Recorded Video: ${videoFileName}`;
+
+                const videoUrl = `/play_video/${videoFileName}`;
+                console.log(`Video URL: ${videoUrl}`);
+
+               // Set the src of the img element to display the video stream
+                additionalCameraView.src = videoUrl;
+
+            } catch (error) {
+                console.error('Error fetching and displaying video content:', error);
+            }
+        }
+        
+        function togglePause() {
+            fetch('/toggle_pause', { method: 'POST' })
+                .then(response => response.text())
+                .then(data => {
+                    const button = document.getElementById('pauseResumeButton');
+                    if (data === 'Paused') {
+                        button.textContent = 'Resume';
+                    } else {
+                        button.textContent = 'Pause';
+                    }
+                })
+                .catch(error => console.error('Error toggling pause:', error));
+        }
     </script>
 </body>
 </html>
