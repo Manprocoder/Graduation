@@ -1,9 +1,13 @@
 <!DOCTYPE html>
+<html lang="en"></html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>Camera System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
+            
             /* Use a linear gradient for the background */
             background: linear-gradient(to right, #1fa2ff, #12d8fa, #a6ffcb);
             /* Use a more stylish font */
@@ -82,21 +86,6 @@
             display: none; /* Initially hidden */
             color: rgb(243, 243, 247);
         }
-        #pauseButton {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 3;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-        }
-        
-        #pauseButton:hover {
-            background-color: rgba(0, 0, 0, 0.7);
-        }
         #savedVideos {
             display: none;
             width: 300px;
@@ -158,6 +147,17 @@
             color: black;
             border: 4px solid rgb(238, 238, 247);
         }
+        #showAttendanceButton {
+            background-color: purple;
+            color: black;
+            border: 4px solid rgb(238, 238, 247);
+        }
+
+        #registerButton {
+            background-color: green;
+            color: black;
+            border: 4px solid rgb(238, 238, 247);
+        }
         h1 {
             color: #333;
             text-align: center;
@@ -191,20 +191,21 @@
             <button id="startButton" class="button">Start</button>
             <button id="stopButton" class="button">Stop</button>
             <button id="viewSavedButton" class="button">View Saved Video</button>
+            <button id="showAttendanceButton" class="button">Show Attendance</button>
+            <button id="registerButton" class="button">Register</button>
         </div>
     </div>
     <script>
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
         const viewSavedButton = document.getElementById('viewSavedButton');
+        const registerButton = document.getElementById('registerButton');
         const cameraView = document.getElementById('cameraView');
         const additionalCameraViewContainer = document.querySelector('.additionalCameraViewContainer');
         const additionalCameraView = document.getElementById('additionalCameraView');
         const additionalCameraViewTitle = document.getElementById('additionalCameraViewTitle');
         const savedVideosDiv = document.getElementById('savedVideos');
         const videoList = document.getElementById('videoList');
-        const pauseButton = document.getElementById('pauseButton');
-
         
         let currentVideoUrl = '';
 
@@ -217,6 +218,10 @@
                 if (response.ok && response.headers.get('Content-Type').includes('application/json')) {
                     const result = await response.json();
                     console.log(result.status);
+
+                     // Clear existing camera view
+                    cameraView.src = '';
+
                     cameraView.src = `${baseUrl}/video_feed`;
                 }
             } catch (error) {
@@ -281,8 +286,17 @@
                 clickableElement.textContent = videoFileName;
                 clickableElement.style.cursor = 'pointer'; // Change cursor to indicate clickability
                 
-                // Event listener to display video content on click
-                clickableElement.addEventListener('click', () => displayVideoContent(videoFileName));
+                 // Event listener to display video content on click
+                clickableElement.addEventListener('click', () => {
+                    // Clear current additional camera view before displaying new video
+                    additionalCameraView.src = "";
+                    additionalCameraView.alt = "";
+                    const button = document.getElementById('pauseResumeButton');
+                    button.textContent = 'Pause';
+
+                    // Call displayVideoContent with the selected videoFileName
+                    displayVideoContent(videoFileName);
+                });
                 
                 li.appendChild(clickableElement);
                 videoList.appendChild(li);
@@ -316,7 +330,7 @@
             }
         }
         
-        function togglePause() {
+       function togglePause() {
             fetch('/toggle_pause', { method: 'POST' })
                 .then(response => response.text())
                 .then(data => {
@@ -329,6 +343,21 @@
                 })
                 .catch(error => console.error('Error toggling pause:', error));
         }
+
+        /*showAttendanceButton.addEventListener('click', async () => {
+            console.log("show attendance BUTTON CLICKED");
+            const response = await fetch(`${baseUrl}/showAttendance`, { method: 'POST' });
+        });*/
+
+        document.getElementById('showAttendanceButton').onclick = function() {
+            window.location.href = '/index';  // Navigate to root URL (index page)
+        };
+
+        registerButton.addEventListener('click', async () => {
+            console.log("register BUTTON CLICKED");
+            const response = await fetch(`${baseUrl}/register`, { method: 'POST' });
+        });
+ 
     </script>
 </body>
 </html>
