@@ -96,7 +96,7 @@
         }
         #slider{
             color: white;
-            width: 90%;
+            width: 100% ;
         }
         #CurrentTimeDislay{
             color: black;
@@ -392,14 +392,12 @@
                 additionalCameraViewTitle.style.display = 'flex'
                 additionalCameraViewTitle.textContent = `Recorded Video: ${videoFileName}`;
 
-                //
+                //Set the src of the img element to display the video stream
                 const videoUrl = `/play_video/${videoFileName}`;
                 console.log(`Video URL: ${videoUrl}`);
                 additionalCameraView.src = videoUrl + '?timestamp=' + new Date().getTime();
-                //Set the src of the img element to display the video stream
-                //additionalCameraView.src = videoUrl;
-                videoSlider.max = duration; // Set the slider's max value to the video's duration
-                videoSlider.value = 0; // 
+                
+                videoSlider.max = Math.floor(duration); // assign the slider's max to the video's duration
                 videoDuration.textContent = formatTime(duration);
                 currentTimeDisplay.textContent = formatTime(0);
 
@@ -414,19 +412,15 @@
                         if (response.ok && result.status === 'success') {
                             progress = result.progress; // Get the progress value from the response
                             console.info('progress value:', progress);
-                            videoSlider.value = progress * duration; // Update the slider value based on progress
+
+                            videoSlider.value = progress*duration; // Update the slider value based on progress
+                            console.log('slider value: ', videoSlider.value);
+
                             currentTimeDisplay.textContent = formatTime(videoSlider.value);
                             
-                            console.info('video Slider value:', videoSlider.value);
-
-                            // Check if video playback is complete, lock custom logic handler
+                            // if video finishes displaying, clear all
                             if (progress === 1) {
                                 clearInterval(sliderUpdateInterval);
-                                additionalCameraView.onended = null; //
-                                window.onbeforeunload = null; // 
-                                //-- ensures that any associated resources or logic 
-                                //-- tied to those events are properly cleaned up or deactivated when they are no longer needed.
-                                //-- 
                             }
                         } else {
                             console.error('Failed to update slider value:', result);
@@ -439,11 +433,6 @@
 
                 sliderUpdateInterval = setInterval(updateSlider, 500);
 
-                if (videoFileName) {
-                    clearIntervals(); 
-                    return; // Exit function early
-                }
-               
                 // Clear the intervals when the video ends or if the user navigates away
                 const clearIntervals = () => {
                     clearInterval(sliderUpdateInterval);
@@ -458,6 +447,11 @@
                 window.onbeforeunload = () => {
                     clearIntervals();
                 };
+
+                if (!videoFileName) {
+                    clearIntervals(); 
+                    return; // Exit function early
+                }
 
             } catch (error) {
                 console.error('Error fetching and displaying video content:', error);
