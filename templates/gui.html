@@ -1,13 +1,11 @@
 <!DOCTYPE html>
-<html lang="en"></html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Camera System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera System</title>
     <style>
-        body {
-            
+        body{
             /* Use a linear gradient for the background */
             background: linear-gradient(to right, #1fa2ff, #12d8fa, #a6ffcb);
             /* Use a more stylish font */
@@ -85,6 +83,30 @@
             border-radius: 5px;
             display: none; /* Initially hidden */
             color: rgb(243, 243, 247);
+        }
+        .controlWrapper{
+            display: flex;
+        }
+        #pauseButton {
+            background-color: white;
+            color: black;
+            border: none;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        #slider{
+            color: white;
+            width: 90%;
+        }
+        #CurrentTimeDislay{
+            color: black;
+        }
+        #VideoDuration{
+            color: black;
+        }
+        #separator {
+            color: black;
+            margin: 0 5px;
         }
         #savedVideos {
             display: none;
@@ -171,7 +193,7 @@
     <div id="content">
         <div class="cameraViewContainer">
             <div class="cameraView">
-                <img id="cameraView" src="" alt="Camera View" />
+                <img id="cameraView" src="" alt="MAIN CAMERA" />
             </div>
             <div class="additionalCameraViewContainer">
                 <div class="cameraViewWrapper">
@@ -179,7 +201,13 @@
                         <img id="additionalCameraView" src="" alt=""/>
                     </div>
                     <div id="additionalCameraViewTitle" class="title">Recorded Video: <span id="videoFileName"></span></div>
-                    <button id="pauseResumeButton" onclick="togglePause()">Pause</button>
+                    <div class="controlWrapper">
+                        <button type="submit" id="pauseButton" onclick="togglePause()">||</button>
+                        <input type="range" id="slider" min="0" value="0" aria-label="Slider">
+                        <span id="CurrentTimeDisplay">00:00</span>
+                        <span id="separator">/</span>
+                        <span id="VideoDuration">00:00</span> <!-- Added duration display -->
+                    </div>
                 </div>
                 <div id="savedVideos">
                     <h2>Saved Videos</h2>
@@ -188,28 +216,31 @@
             </div>
         </div>
         <div id="buttonContainer">
-            <button id="startButton" class="button">Start</button>
-            <button id="stopButton" class="button">Stop</button>
-            <button id="viewSavedButton" class="button">View Saved Video</button>
-            <button id="showAttendanceButton" class="button">Show Attendance</button>
-            <button id="registerButton" class="button">Register</button>
+            <button type="submit" id="startButton" class="button">Start</button>
+            <button type="submit" id="stopButton" class="button">Stop</button>
+            <button type="submit" id="viewSavedButton" class="button">View Saved Video</button>
+            <button type="submit" id="showAttendanceButton" class="button">Show Attendance</button>
+            <button type="submit" id="registerButton" class="button">Register</button>
         </div>
     </div>
     <script>
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
         const viewSavedButton = document.getElementById('viewSavedButton');
-        const registerButton = document.getElementById('registerButton');
+        const pauseButton  = document.getElementById('pauseButton');
+        /*--const registerButton = document.getElementById('registerButton');*/
         const cameraView = document.getElementById('cameraView');
         const additionalCameraViewContainer = document.querySelector('.additionalCameraViewContainer');
         const additionalCameraView = document.getElementById('additionalCameraView');
         const additionalCameraViewTitle = document.getElementById('additionalCameraViewTitle');
         const savedVideosDiv = document.getElementById('savedVideos');
         const videoList = document.getElementById('videoList');
-        
-        let currentVideoUrl = '';
+        const videoSlider = document.getElementById("slider");
+        const currentTimeDisplay = document.getElementById("CurrentTimeDisplay");
+        const videoDuration = document.getElementById("VideoDuration");
 
         const baseUrl = window.location.origin;
+        let sliderUpdateInterval; //pivotal variable
 
         startButton.addEventListener('click', async () => {
             console.log("START BUTTON CLICKED");
@@ -222,7 +253,8 @@
                      // Clear existing camera view
                     cameraView.src = '';
 
-                    cameraView.src = `${baseUrl}/video_feed`;
+                    //cameraView.src = `${baseUrl}/video_feed`;
+                    cameraView.src = `${baseUrl}/video_feed` + '?timestamp=' + new Date().getTime();
                 }
             } catch (error) {
                 console.error('Display video stream failed', error);
@@ -241,7 +273,11 @@
 
         viewSavedButton.addEventListener('click', async () => {
             console.log('VIEW BUTTON CLICKED');
+            videoDuration.textContent = formatTime(0);
+            pauseButton.textContent = '||';
             if (!isListViewVisible) {
+
+                isListViewVisible = true;
                 try {
                     const response = await fetch(`${baseUrl}/view_saved`);
                     if (response.ok && response.headers.get('Content-Type').includes('application/json')) {
@@ -251,106 +287,207 @@
                         savedVideos.style.display = 'block'; // Show the list
                         additionalCameraViewContainer.style.display ='flex'
                         additionalCameraView.alt = "ADDITIONAL CAMERA"
-                        isListViewVisible = true;
+                        
                     }
                 } catch (error) {
                     console.error('Failed to load saved videos', error);
                 }
             } else {
+                isListViewVisible = false;
                 videoList.innerHTML = ''; // Clear current list
                 // Clear additional Camera
                 additionalCameraView.src = "";
                 additionalCameraView.alt = "";
+                currentTimeDisplay.textContent = "00:00";
                 additionalCameraViewTitle.style.display = 'none';
+                videoSlider.value = 0;
                 //
                 savedVideos.style.display = 'none'; // Hide the list
                 additionalCameraViewContainer.style.display = 'none'
-                isListViewVisible = false;
+
+                // Clear the interval if the list view is hidden
+                clearIntervals();
             }
         });
         
-        function updateListView(videos) {
-            if (!videoList) {
-                console.error('ListView is null');
-                return;
+        //this function is used for disabling all as videoList is hidden
+        //--- vital function
+        function clearIntervals() {
+            if (sliderUpdateInterval) {
+                clearInterval(sliderUpdateInterval);
+                sliderUpdateInterval = null;
             }
-            videoList.innerHTML = ''; // Clear the list before adding new items
-            
-            videos.forEach(video => {
-                console.log(`Adding video to list: ${video}`); 
-                const li = document.createElement('li');
-                const videoFileName = video; // Assuming video is just the filename
-                
-                // Create a clickable element (could be an <img> or <span> depending on your UI)
-                const clickableElement = document.createElement('span');
-                clickableElement.textContent = videoFileName;
-                clickableElement.style.cursor = 'pointer'; // Change cursor to indicate clickability
-                
-                 // Event listener to display video content on click
-                clickableElement.addEventListener('click', () => {
-                    // Clear current additional camera view before displaying new video
-                    additionalCameraView.src = "";
-                    additionalCameraView.alt = "";
-                    const button = document.getElementById('pauseResumeButton');
-                    button.textContent = 'Pause';
-
-                    // Call displayVideoContent with the selected videoFileName
-                    displayVideoContent(videoFileName);
-                });
-                
-                li.appendChild(clickableElement);
-                videoList.appendChild(li);
-            });
         }
-        
-        async function displayVideoContent(videoFileName) {
+
+        async function updateListView(videos) {
             try {
+                if (!videoList) {
+                    console.error('ListView is null');
+                    return;
+                }
+                videoList.innerHTML = ''; // Clear the list before adding new items
+
+                for (let i = 0; i < videos.length; i++) {
+                    videoFileName = videos[i];
+
+                    const li = document.createElement('li');
+
+                    const clickableElement = document.createElement('span');
+                    clickableElement.textContent = videoFileName;
+                    clickableElement.style.cursor = 'pointer';
+                
+                    // Fetch video duration
+                    let duration = 0;
+                  
+                    try {
+                        const response = await fetch(`${baseUrl}/get_video_duration?filename=${encodeURIComponent(videoFileName)}`);
+                        if (response.ok && response.headers.get('Content-Type').includes('application/json')) {
+                            const result = await response.json();
+                            duration = result.duration;
+                        } else {
+                            console.error('Failed to fetch video duration');
+                        }
+
+                    } catch (error) {
+                        console.error('Error fetching video duration:', error);
+                    }
+
+                    // Event listener to display video content on click
+                    clickableElement.addEventListener('click', (function(videoFileName, duration) {
+                        return async () => {
+
+                            // Call displayVideoContent with the selected videoFileName and its duration
+                            await displayVideoContent(videoFileName, duration);
+                        };
+                    })(videoFileName, duration));
+
+                    li.appendChild(clickableElement);
+                    videoList.appendChild(li);
+
+                } //end of for loop
+            } catch (error) {
+                console.error('Error updating video list:', error);
+            }
+        }
+
+        async function displayVideoContent(videoFileName, duration) {
+            try {
+                // Clear any existing interval
+                clearInterval(sliderUpdateInterval);
+    
                 console.log(`Fetching video content: ${videoFileName}`);
         
                 if (!additionalCameraView) {
                     throw new Error('additionalCameraView is null');
                 }
-                
+
                 // Clear the current content
-                additionalCameraView.src = "";
-                additionalCameraView.alt = "";
+                additionalCameraView.src = '';
+                additionalCameraView.alt = '';
+                currentTimeDisplay.value = 0;
+                videoSlider.value = 0;
+                pauseButton.textContent = '||';
                 
                 // Update the title
                 additionalCameraViewTitle.style.display = 'flex'
                 additionalCameraViewTitle.textContent = `Recorded Video: ${videoFileName}`;
 
+                //
                 const videoUrl = `/play_video/${videoFileName}`;
                 console.log(`Video URL: ${videoUrl}`);
+                additionalCameraView.src = videoUrl + '?timestamp=' + new Date().getTime();
+                //Set the src of the img element to display the video stream
+                //additionalCameraView.src = videoUrl;
+                videoSlider.max = duration; // Set the slider's max value to the video's duration
+                videoSlider.value = 0; // 
+                videoDuration.textContent = formatTime(duration);
+                currentTimeDisplay.textContent = formatTime(0);
 
-               // Set the src of the img element to display the video stream
-                additionalCameraView.src = videoUrl;
+                let progress = 0;
+                const updateSlider = async () => {
+                    try {
+                        console.log('Updating slider value');
+                       
+                        const response = await fetch(`${baseUrl}/slider_update`);
+                        const result = await response.json();
+
+                        if (response.ok && result.status === 'success') {
+                            progress = result.progress; // Get the progress value from the response
+                            console.info('progress value:', progress);
+                            videoSlider.value = progress * duration; // Update the slider value based on progress
+                            currentTimeDisplay.textContent = formatTime(videoSlider.value);
+                            
+                            console.info('video Slider value:', videoSlider.value);
+
+                            // Check if video playback is complete, lock custom logic handler
+                            if (progress === 1) {
+                                clearInterval(sliderUpdateInterval);
+                                additionalCameraView.onended = null; //
+                                window.onbeforeunload = null; // 
+                                //-- ensures that any associated resources or logic 
+                                //-- tied to those events are properly cleaned up or deactivated when they are no longer needed.
+                                //-- 
+                            }
+                        } else {
+                            console.error('Failed to update slider value:', result);
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error fetching slider update:', error);
+                    }
+                };
+
+                sliderUpdateInterval = setInterval(updateSlider, 500);
+
+                if (videoFileName) {
+                    clearIntervals(); 
+                    return; // Exit function early
+                }
+               
+                // Clear the intervals when the video ends or if the user navigates away
+                const clearIntervals = () => {
+                    clearInterval(sliderUpdateInterval);
+                };
+
+                // Event handler for when the video ends
+                additionalCameraView.onended = () => {
+                    clearIntervals();
+                };
+
+                // Event handler for when user navigates away
+                window.onbeforeunload = () => {
+                    clearIntervals();
+                };
 
             } catch (error) {
                 console.error('Error fetching and displaying video content:', error);
             }
         }
-        
-       function togglePause() {
+
+        function togglePause() {
             fetch('/toggle_pause', { method: 'POST' })
                 .then(response => response.text())
                 .then(data => {
-                    const button = document.getElementById('pauseResumeButton');
-                    if (data === 'Paused') {
-                        button.textContent = 'Resume';
+                    if (pauseButton.textContent === '▶️') {
+                        pauseButton.textContent = '||'; // Change to pause symbol
                     } else {
-                        button.textContent = 'Pause';
+                        pauseButton.textContent = '▶️'; // Change to play symbol
                     }
                 })
                 .catch(error => console.error('Error toggling pause:', error));
         }
+ 
 
-        /*showAttendanceButton.addEventListener('click', async () => {
-            console.log("show attendance BUTTON CLICKED");
-            const response = await fetch(`${baseUrl}/showAttendance`, { method: 'POST' });
-        });*/
+        // Format time from seconds to mm:ss format
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60) ;
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
 
+        //-------------------------------------------------------------------------
         document.getElementById('showAttendanceButton').onclick = function() {
-            window.location.href = '/index';  // Navigate to root URL (index page)
+            window.location.href = '/index';  // Navigate to second URL (index page)
         };
 
         registerButton.addEventListener('click', async () => {
